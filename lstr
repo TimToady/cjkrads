@@ -1,0 +1,163 @@
+#!/usr/bin/perl
+
+use 5.010;
+
+while (<>) {
+    push @lines, $_;
+    if (my ($front, $X,$x,$Y,$y,$Z,$z, $back) = /^(.*?\t)([-\w]+)\.(\w) ([-\w]+)\.(\w+) ([-\w]+)\.(\w+)\b(.*)$/) {
+	my $form = "$x $y $z";
+	if ($form eq "l rt rb") {
+	    push @lines, $front . "$Y.i $X.ol $Z.or" . "$back\n";
+	    push @lines, $front . "$Z.i $X.ol $Y.or" . "$back\n";
+	}
+	elsif ($form eq "r lt lb") {
+	    push @lines, $front . "$Y.i $X.or $Z.ol" . "$back\n";
+	    push @lines, $front . "$Z.i $X.or $Y.ol" . "$back\n";
+	}
+	elsif ($form eq "o it ib") {
+	    push @lines, $front . "$Y.i $X.oo $Z.oi" . "$back\n";
+	    push @lines, $front . "$Z.i $X.oo $Y.oi" . "$back\n";
+	}
+	elsif ($form eq "o il ir") {
+	    push @lines, $front . "$Y.i $X.oo $Z.oi" . "$back\n";
+	    push @lines, $front . "$Z.i $X.oo $Y.oi" . "$back\n";
+	}
+	elsif ($form eq "t bl br") {
+	    push @lines, $front . "$Y.i $X.ot $Z.ob" . "$back\n";
+	    push @lines, $front . "$Z.i $X.ot $Y.ob" . "$back\n";
+	}
+	elsif ($form eq "t bC bc") {
+	    push @lines, $front . "$Z.i $X.ot $Y.ob" . "$back\n";
+	}
+	elsif ($form eq "b tl tr") {
+	    push @lines, $front . "$Z.i $Y.ot $X.ob" . "$back\n";
+	}
+	elsif ($form eq "b tC tc") {
+	    push @lines, $front . "$Z.i $Y.ot $X.ob" . "$back\n";
+	}
+	elsif ($form eq "l c r") {
+	    push @lines, $front . "$Z.r $X.ll $Y.lr" . "$back\n";
+	    push @lines, $front . "$Y.c $X.l $Z.r"   . "$back\n";
+	}
+	elsif ($form eq "l ro ri") {
+	    push @lines, $front . "$Z.i $X.ol $Y.or" . "$back\n";
+	}
+	elsif ($form eq "t bo bi") {
+	    push @lines, $front . "$Z.i $X.ot $Y.ob" . "$back\n";
+	}
+	elsif ($form eq "r c l") {
+	    push @lines, $front . "$Z.l $X.rr $Y.rl" . "$back\n";
+	    push @lines, $front . "$Y.c $Z.l $X.r"   . "$back\n";
+	}
+	elsif ($form eq "t m b") {
+	    push @lines, $front . "$Z.b $X.tt $Y.tb" . "$back\n";
+	    push @lines, $front . "$Y.m $X.t $Z.b"   . "$back\n";
+	}
+	elsif ($form eq "b m t") {
+	    push @lines, $front . "$Z.t $X.bb $Y.bt" . "$back\n";
+	    push @lines, $front . "$Y.m $Z.t $X.b"   . "$back\n";
+	}
+    }
+}
+
+my $prevstrokes = '';
+
+for (@lines) {
+    if (not s/^(.*\t)//) {
+	print;
+	next;
+    }
+    my $front = $1;
+    my $rest = $_;
+
+    if (s/^([-\w]+)\.([lrtbmcMCiol])\s+//) {
+	my $root = $1;
+	my $ext = $2;
+	my @anti;
+	(my $opp = $ext) =~ tr/lrtbmcMCio/rlbtMCmcoi/;
+	# say "$ext $opp";
+	if ($ext eq 'l') {
+	    s/\.c/.rl/g and s/\.r([^l])/.rr$1/g;
+	}
+	elsif ($ext eq 'r') {
+	    s/\.c/.lr/g and s/\.l([^r])/.ll$1/g;
+	}
+	elsif ($ext eq 't') {
+	    s/\.m/.bt/g and s/\.b([^t])/.bb$1/g;
+	}
+	elsif ($ext eq 'b') {
+	    s/\.m/.tb/g and s/\.t([^b])/.tt$1/g;
+	}
+	elsif ($ext eq 'c') {
+	    s/\.l/.ll/g and s/\.r/.rr/g;
+	}
+	elsif ($ext eq 'm') {
+	    s/\.t/.tt/g and s/\.b/.bb/g;
+	}
+	my @rest = '';
+	$opp = '[tb]' if $opp eq 'M';
+	$opp = '[lr]' if $opp eq 'C';
+	for (split(' ', $_)) {
+	    # say $_;
+	    if (!/~/ and s/\.$opp(\w)/.$1/g) {
+		push @anti, $_;
+	    }
+	    else {
+		push @rest, $_;
+	    }
+	}
+	if (@anti) {
+	    my $doit = 1;
+	    my $grep = join ' | ', map { "grep -i '\\<$_'" } @anti;
+	    # say "# root $root ext $ext opp $opp rad @anti | $grep";
+	    my @lookup = `rad -v @anti | $grep`;
+	    $doit = 0 unless @lookup;
+	    @lookup = `rad -l -v -K @anti | $grep` unless @lookup;
+	    if (not @lookup) {
+		my @ant = @anti;
+		s/\..*//g for @ant;
+		@lookup = `rad -K @ant` unless @lookup;
+	    }
+	    if (@lookup) {
+		my $found = $lookup[-1];
+		$found =~ s/\[.*//;
+		print '#' . $found;
+		$opp = 'M' if $opp eq '[tb]';
+		$opp = 'C' if $opp eq '[lr]';
+		if ($doit && $found =~ /\+([-\w]+)/) {
+		    $rest = "$root.$ext $1.$opp@rest\n";
+		}
+	    }
+	    else {
+		say "# @anti";
+	    }
+	}
+    }
+
+    my $strokes = 0;
+    my @parts = split(' ', $rest);
+    for my $part (@parts) {
+	my $rep = 1;
+	$rep = $1 if $part =~ s/^(\d+)\.//;
+	next unless $part =~ /^([-~\w]+)\.[lrtbmcMCioTQRF]+$/;
+	my $word = $1;
+	next if $word =~ /[~]\w*$/;
+	my $lookup = `egrep '[+]$word\\>(\$|[^-])' rads || rad '+$word'`;
+	chomp $lookup;
+	$lookup =~ s/^.*\n//s;
+	say "# $lookup";
+	my $s = $1 if $lookup =~ /\b(\d\d)\b/;
+	$strokes += $s * $rep // 999;
+    }
+    $strokes = 900 if $strokes > 999;
+    $strokes += 100;
+    $strokes = substr($strokes,-2,2);
+    if ($strokes eq $prevstrokes) {
+	$front = "\t\t/ ";
+    }
+    else {
+	$front =~ s/(\s)\d\d(\s)/$1$strokes$2/;
+	$prevstrokes = $strokes;
+    }
+    print $front, $rest;
+}

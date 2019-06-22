@@ -1,0 +1,159 @@
+    Copyright 2019, Larry Wall
+
+    Unless otherwise noted, everything in this directory may be distributed
+    under the terms of the Artistic License, version 2.0 or later.
+
+    This project is an attempt to decompose all CJK characters into named
+    radicals.  Some of the names are standard radical names, some are the names
+    of other characters, and some are completely made up.  The goal is to have
+    a system of mnemonics, not to try for a traditional radical naming scheme.
+
+    Nevertheless, where practical I've tried to use the standard radical
+    names and meanings.  One problem is that there are multiple standards to
+    pick from here.  I originally started with just the Japanese characters,
+    so there may be a slight resididual bias toward Japanese meanings, but
+    when I have a choice between a radical name that is a purely Japanese
+    interpretation and one that also related to the semantic space of the
+    Chinese borrowing, I've opted for the Chinese-related meaning, even if
+    it's not the usual Japanese gloss (or Chinese gloss) for that particular
+    character or radical.
+
+    For similar reasons, some of my names are not the modern meaning in
+    any CJKV language, but can be mnemonically related via the etymology.
+    For instance, the original "clam" symbol is called MORNING in KangXi,
+    but means "dragon" in Chinese (and zodiacal Japanese).  But many of the
+    derived meanings apparently relate to the idea of a clam shell opening
+    up, like a pair of lips, or the daytime sky opening up like a clamshell.
+    So "clam" it is.
+
+    For infrequently used names I've often just run the component part names
+    together--the goal in such cases is merely to get a unique name, not to
+    be particularly meaningful.
+
+    Since the names are picked primarily for their mnemonic value, it should
+    never be assumed that the particular word I've chosen is somehow the one
+    and only "real" meaning...though of course I've tried to come close to
+    the core meaning if there is one.
+
+    In particular, some of the mnemonics chosen here may make more sense to
+    an English speaker than to a Chinese speaker.  A speaker of Chinese is
+    likely better off remembering characters based on the phonetic radicals,
+    since Chinese characters are partially phonetic and partially logographic.
+    Our treatment here is mostly logographic, which is just as much of a
+    distortion as treating Chinese as mostly phonetic.  As usual the truth
+    is somewhere in the middle.
+
+    In any case, the decompositions in here largely take the approach:
+    "This piece LOOKS like that so we'll pretend that's what it really is."
+    Please, please do not assign any etymological significance to accidental
+    lookalikes.  Chinese is full of symbols that have fallen together or
+    fallen apart over time, either accidentally or intentionally, and every
+    honest scholar of Chinese admits that there is a great deal of guesswork
+    in many of the derivations, especially in some of the more obscure corners
+    of the orthography.  As a vague approximation for some of that scholarly
+    work, this project is even less reliable.
+
+    PLEASE DO NOT TAKE ME FOR A CHINESE SCHOLAR.
+
+    Also, be aware that Unicode characters vary in font genericity; the
+    plane 0 characters often list several variants construed to have the
+    same meaning, while the individual variants may be found (sometimes)
+    in the plane 2 extensions.  Another difference you should be aware of
+    is that the planes tend to count strokes differently.  (This is because
+    the base plane contains unifications of characters can be written
+    three or four different ways, while the extensions mostly contain
+    characters written one way, so you can talk about the variants as
+    different characters.)
+    
+    For instance, the radical for plants, 艹, is counted as six
+    strokes in the base plane (because it's a variant of 艸), but
+    as four strokes in the extensions, whether written as 艹 or 艹.
+    In general, count yourself lucky if you come within a stroke or two
+    of the stroke count listed here.
+
+    Finally, there are plenty of mistakes in here, due to bad fonts, bad
+    eyesight, or just bad thinking on the part of the author.  Sucks to
+    be us...
+
+    When one exists, the simplified character gets a lowercase name, while
+    the corresponding traditional character gets an uppercase name.
+
+    A variant or alternate form of the traditional character will usually be
+    prefixed with a lowercase v (followed by a digit in the case of multiple
+    variants, but note that we just use "v" to mean the "v1" variant).
+    No meaning should be attributed to the digit.  There's no system here, except
+    that the higher digits tend to be rarer so I came to them later.  Some of my
+    early variants use '-ish' or '-y' suffixes, for example, the various
+    variants of "Good", "good", "goodish", "goody", in parallel with "Whoa", etc.
+
+    These are only general rules, so don't expect complete consistency.
+    In particular, lowercase is often used for traditional forms that have no
+    simplified form.  Contrariwise, some lower/uppercase names overlap because
+    I wanted to use the same name for two entirely different characters,
+    or for two minor variants of the same character.  There just aren't that
+    many good short words in English.  (For similar reasons I don't apologize
+    for using some of the earthier short words supplied by English. :)
+
+    In the cases where we have named a phonetic syllable after its sound,
+    it is typically uppercased: Mang, Li, Xi, etc.
+
+    If a character has the special codepoint 0000 with ? for a grapheme, it
+    means that Unicode does not (yet?) contain this pattern as a separate
+    character, so it must be described indirectly.  In general, I haven't
+    added these pseudo-characters unless the patterns occur four or five
+    times within other characters, with a slight bias to adding a pattern
+    sooner if it seems to have some etymological significance as a unit
+    of meaning, and later if it just seems to be accidental juxtaposition.
+    (In that sense, it's a bit like the distinction between constellations
+    that are star clusters vs those that are mere asterisms.)
+
+    For description of the location of each subradical, we use suffixes after
+    a dot to indicate their position.
+
+    Basic positions:
+	t  top		l  left
+	m  middle	c  center
+	b  bottom	r  right
+
+	o  outside
+	i  inside
+
+    Spreaders:
+	C  anti-c, that is, split l+r (or wider than the c thing)
+	M  anti-m, that is, split t+b (or taller than the m thing)
+	V  Vertical, 3 or more in a stack, usually nothing inside
+	H  Horizontal, 3 or more in a row, usually nothing inside
+
+	T  triple, e.g. 众 is 1*guy.tc 2*guy.bC
+	Q  quad, e.g. 𠈌 is 4*guy.CM or 4*guy.MC in a square
+
+    Generally, if it's ambiguous whether to describe crossings vertically
+    or horizontally, I've chosen to use c/C to describe things in the
+    horizontal dimension rather than m/M in the vertical dimension.  But
+    sometimes I do both...
+
+    Approximators:
+	~R    Rotation (replication implies rotational symmetry, e.g. 𦮙.b)
+	        May be annotated with 45° rotations 0..7 clockwise
+	~F    Flipped (replication implies mirror symmetry)
+	        May be annotated with location/axis of flip
+	~S    Stolen from or shared with another piece
+	        May be annotated with location of piece shared
+	~oid  A descriptive subshape that isn't really a subradical
+	        (a 止 contains 上 but they are really different shapes)
+	~like A miscellaneous could-be-confused-with lookalike
+
+    An isolated single slash (/) gives a vague idea of alternation.
+    Note that the first alternative is usually going to be the "correct"
+    one, and subsequent alternatives are just other ways it would be
+    possible to decompose the character, in case someone looks them up
+    that way.
+
+    An isolated double slash (//) is used mostly on radicals to indicate
+    that the subparts are merely descriptive of shapes, and should not
+    be recursively expanded for search purposes.  Because they are not
+    recursively expanded, we use a bit more redundancy of description
+    for the subparts that people might search on.  For instance, we
+    might put both 电 "electric" and ⺃ "hook", even though electric
+    would expand to hook if we did that, which we don't, so there.
+

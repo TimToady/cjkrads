@@ -1,0 +1,25 @@
+#!/usr/bin/perl
+
+use 5.010;
+
+while (<>) {
+    my $strokes = 0;
+    my @parts = split(' ');
+    for my $part (@parts) {
+	my $rep = 1;
+	$rep = $1 if $part =~ s/^(\d+)\*//;
+	next unless $part =~ /^([-\w]+)\.[lrtbmcMCioQTRFVH]+$/;
+	my $word = $1;
+	next if $word =~ /~\w*$/;
+	my $lookup = `egrep '[+]$word\\>(\$|[^-])' rads || rad '+$word'`;
+	chomp $lookup;
+	$lookup =~ s/^.*\n//s;
+	my $s = $1 if $lookup =~ /\b(\d\d)\b/;
+	$strokes += $s * $rep // 999;
+    }
+    $strokes = 900 if $strokes > 999;
+    $strokes += 100;
+    $strokes = substr($strokes,-2,2);
+    s/(\s)\d\d(\s)/$1$strokes$2/;
+    print;
+}

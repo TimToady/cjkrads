@@ -1,0 +1,258 @@
+#!/usr/bin/perl
+
+binmode STDOUT, ":utf8";
+
+use FileCache;
+
+system "rm -rf cjkrads.new; mkdir cjkrads.new";
+chdir 'cjkrads.new' or die;
+open ALIAS, ">:utf8", "alias" or die;
+print ALIAS <<'END';
+# Automatically generated file--don't edit.
+-a      \+
+-r      radical
+
+END
+
+open RADS, "../rads" or die "Can't open rads: $!";
+eval { binmode RADS, ":utf8" };
+
+my @pieces;
+
+while (<RADS>) {
+    next unless s/^([0-9a-f]{4,5})(?: (\d+))?\s(.)\t//;
+    my $hex = $1;
+    my $strokes = $2;
+    my $char = $3;
+    my @chunks = split ' ';
+    @pieces = ();
+    my @innies = ();
+    foreach my $chunk (@chunks) {
+        $chunk =~ s/^\(//;
+        $chunk =~ s/\)$//;
+        next if $chunk =~ /=/;
+        next if $chunk =~ /^\+/;
+        next if $chunk =~ /^\/\w*$/;
+        next if $chunk =~ /^(radical|sym|radial)/;
+        next if ord($chunk) > 255;
+        push @pieces, $chunk;
+        #if ($chunk =~ s/[CMTQ]$/o/ or
+        #    $chunk =~ s/[cm]$/i/) {
+        #    #print "$chunk\n";
+        #    push @pieces, $chunk;
+        #}
+    }
+    push @pieces, "s$strokes." if $strokes;
+    my @aliases = ();
+    while (m#/([-A-Za-z0-9_]+)#g) {
+        push(@aliases, $1);
+    }
+    while (/(\++)([-A-Za-z0-9_]+)(?:\.(\w+))?/g) {
+        $plusses = $1;
+        $word = $2;
+        $where = $3;
+        $oldline = $keyword{$word}[0];
+        if ($oldline and $. - $oldline > 0) {
+            warn "Word $word at line $. already defined at line $oldline.\n";
+        }
+        if (length($plusses) == 1) {
+            $keyword{$word} = [$.,$hex,$char,$where,[@pieces],[@aliases],[@innies]];
+        }
+        else {
+            $keyword{$word} = [$.,$hex,$char,$where,[],[],[@innies]];
+        }
+    }
+}
+
+seek(RADS, 0, 0);
+$. = 0;
+
+my $linenum;
+
+while (<RADS>) {
+    chomp;
+    next unless /^[0-9a-f]{4,5}( \d+)?\s.\t/;
+    my $line = $_;
+    s/^[0-9a-f]{4,5}( \d+)?\s.\t//;
+    %adds = ();
+    %expanded = ();
+    my @chunks = split ' ';
+    while (@chunks) {
+        $_ = shift @chunks;
+        next if /=/;
+        next if /^\+/;
+        s/^\(//; s/\)$//;
+        next if /^\//;
+        next if ord($_) > 255;
+        delete $adds{$_};
+        my $loc = "";
+        s/\.([lrtbmMcCiosTQVHRF]+)$// and $loc = $1;
+        my $n = 0;
+        $n = $1 if s/^(\d+)[*.]//;
+        if ($keyword{$_}) {
+            expandone($_,$loc,'',$n);
+            #if ($loc =~ s/[CMTQ]$/o/ or
+            #    $loc =~ s/[cm]$/i/) {
+            #    $adds{"$_.$loc"} = 1;
+            #}
+        }
+        else {
+            s/~\w*$//;
+            push(@{$weird{$_}}, $.) unless $keyword{$_};
+        }
+    }
+    if (%adds) {
+        $line .= ' [ ' .  join(' ', sort keys %adds) . ' ]';
+    }
+    $line .= "\n";
+    my $path = "./ALL";
+    cacheout(">>", $path);
+    binmode $path, ":utf8";
+    print $path $line;
+    $linenum++;
+
+    my $tmp = $line;
+    $tmp =~ s/^([0-9a-f]{4,5})(?: \d+)?\s(.)\t//;
+    my @chunks = $tmp =~ m/([-~\w.\x{2000}-\x{2ffff}]+)/g;
+    my %seen = ();
+    foreach (@chunks) {
+        next if /=/;
+        s/\.[0-9lrtbmMcCiosTQVHRF]+$//;
+        s/^\d+[*.]//; 
+        next if ord($_) > 255;
+        s/(.)~\w*$/$1/;
+        next if $seen{$_}++;
+        print($line), next if $_ eq "";
+        $path = "./$_";
+        #cacheout(">>", $path);
+        #binmode $path, ":utf8";
+        #print $path $line;
+        vec($bits{$path},$linenum,1) = 1;
+    }
+}
+
+mkdir "vec" or die unless -d 'vec';
+chdir "vec" or die;
+foreach $path (keys %bits) {
+    open BITS, ">$path" or warn "Can't create vec/$path: $!\n";
+    print BITS $bits{$path};
+    close BITS;
+}
+
+foreach $keyword (sort keys %keyword) {
+    print ALIAS "$keyword\t$keyword\t@{$keyword{$keyword}}[1,2,3]\n";
+    for my $alias (@{@{$keyword{$keyword}}[5]}) {
+        print ALIAS "$alias\t$keyword\t@{$keyword{$keyword}}[1]\n"
+            unless $keyword{$alias};
+    }
+}
+
+foreach $word (sort keys %weird) {
+    print $word,"\t", join(' ',@{$weird{$word}}), "\n";
+}
+system "chdir ../..; rm -rf cjkrads.old; mv cjkrads cjkrads.old; mv cjkrads.new cjkrads";
+
+sub expand {
+    my ($word,$loc) = @_;
+
+    my $entry = $word;
+    $entry .= '.' . $loc if $loc;
+    die "Deep recursion on $entry" if length($loc) > 100;
+    $adds{$entry} = 1;
+    return unless $keyword{$word} and !$expanded{$entry}++;
+
+    if (@{ $keyword{$word}[4] }) {
+        my $desc = 0;
+        foreach my $alias (@{ $keyword{$word}[4] }) {
+            if ($alias eq '//') { $desc = 1 }
+            else {
+                my $tmp = $alias;
+                $tmp .= "." unless $tmp =~ /\./;
+                my ($subword,$subloc) = split /\./, $tmp;
+                if ($desc) {
+                    $adds{"$subword.$loc$subloc"} = 1;
+                }
+                else {
+                    my $n = 1;
+                    $n = $1 if $subword =~ s/^\d[*.]//;
+                    expandone($subword,$loc,($subloc // ''),$n);
+                }
+            }
+        }
+    }
+}
+
+sub expandone {
+    my ($word, $loc, $subloc, $n) = @_;
+    print "expandone $word $loc $subloc $n\n" if $HEX eq '2debf';
+
+    if ($n == 2 and $loc =~ /[CM]$/) {
+        if ($loc =~ s/C$//) {
+            expand($word,$loc . 'l');
+            expand($word,$loc . 'r');
+        }
+        elsif ($loc =~ s/M$//) {
+            expand($word,$loc . 't');
+            expand($word,$loc . 'b');
+        }
+        return;
+    }
+    elsif ($n > 2 and $loc =~ /[HV]$/) {
+        if ($loc =~ s/H$//) {
+            expand($word, $loc . 'l');
+            if ($n == 3) {
+                expand($word, $loc . 'c');
+            }
+            else {
+                expand($word, $loc . 'cl');
+                expand($word, $loc . 'c') if $n > 4;
+                expand($word, $loc . 'cr');
+            }
+            expand($word, $loc . 'r');
+        }
+        elsif ($loc =~ s/V$//) {
+            expand($word, $loc . 't');
+            if ($n == 3) {
+                expand($word, $loc . 'm');
+            }
+            else {
+                expand($word, $loc . 'mt');
+                expand($word, $loc . 'm') if $n > 4;
+                expand($word, $loc . 'mb');
+            }
+            expand($word, $loc . 'b');
+        }
+        return;
+    }
+
+    my $entry;
+    if (length($loc)) {
+        $entry = "$word.$loc";
+    }
+    else {
+        $entry = $word;
+    }
+    $adds{$entry} = 1;
+    if ($entry =~ s/\.(lr|rl)/.c/) {
+        $adds{$entry} = 1;
+    }
+    elsif ($entry =~ s/\.(tb|bt)/.m/) {
+        $adds{$entry} = 1;
+    }
+    elsif ($entry =~ s/\.([rltbio])\1+/.$1/) {
+        $adds{$entry} = 1;
+    }
+    elsif ($entry =~ s/\.C([lr]?)/.$1/) {
+        $adds{$entry} = 1;
+    }
+    elsif ($entry =~ s/\.M([tb]?)/.$1/) {
+        $adds{$entry} = 1;
+    }
+    elsif ($entry =~ s/\.o(\w)/.$1/) {
+        $adds{$entry} = 1;
+    }
+    elsif ($entry =~ s/\.o$//) {
+        $adds{$entry} = 1;
+    }
+    expand($word, $loc . $subloc);
+}

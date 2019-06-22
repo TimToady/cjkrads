@@ -1,0 +1,316 @@
+#!/usr/bin/perl
+
+use 5.010;
+
+my $CJK = $ENV{HOME} . '/cjk';
+chdir $CJK or die "Can't cd to $CJK: $!\n";
+
+binmode STDIN, ":utf8";
+binmode STDOUT, ":utf8";
+binmode STDERR, ":utf8";
+
+$co = 0;
+while ($ARGV[0] =~ /^-/) {
+    if ($ARGV[0] eq '-c') {
+	$co = 1;
+	shift;
+    }
+    elsif ($ARGV[0] eq '-d') {
+	$debug = 1;
+	shift;
+    }
+    elsif ($ARGV[0] eq '-h' or $ARGV[0] eq '--help') {
+	print <<"EOH";
+Usage:
+    rad -[cdhklrv] [args]
+
+    Switches:
+	-d	Debug
+	-h	This help message
+	-k	Keep trying if necessary by truncating final arg
+	-l	Look for likely lookalikes
+	-r	Match only radicals
+	-v	Verbose (show precomputed subradical list)
+	-x	Expand subradicals
+	-X	Expand subradicals including lookalikes
+
+EOH
+	exit;
+    }
+    elsif ($ARGV[0] eq '-k') {
+	$keeptrying = 1;
+	shift;
+    }
+    elsif ($ARGV[0] eq '-K') {
+	$keeptrying = 0;
+	shift;
+    }
+    elsif ($ARGV[0] eq '-l') {
+	$likeliness = 1;
+	shift;
+    }
+    elsif ($ARGV[0] eq '-r') {
+	push(@ARGV, "radical");
+	shift;
+    }
+    elsif ($ARGV[0] eq '-v') {
+	$verbose = 1;
+	shift;
+    }
+    elsif ($ARGV[0] =~ /-x(\d*)/) {
+	$expand = 0 + $1;
+	shift;
+    }
+    elsif ($ARGV[0] =~ /-X(\d*)/) {
+	$expand = 0 + $1;
+	shift;
+	$eXpand = 1;
+    }
+    else { last }
+}
+#$co = 1 if $ARGV[0] =~ s/!!$/!/;
+
+use Encode;
+eval { binmode STD, ":utf8" };
+
+open ALIAS, "cjkrads/alias" or die "Can't open cjkrads/alias: $!\n";
+eval { binmode ALIAS, ":utf8" };
+while (<ALIAS>) {
+    chomp;
+    ($key,$val,$hex,$char,$where) = split(' ',$_);
+    $alias{$key} = $val;
+    $alias{$char} = $val;
+    $alias{$hex} = $val;
+}
+close ALIAS;
+
+if (not @ARGV) {
+    require Term::ReadLine;
+    my $term = Term::ReadLine->new('rad');
+    while (defined($_ = $term->readline(''))) {
+	my @words = split ' ', $_;
+	@OUT = ();
+	next unless @words;
+	look(@words);
+	for (reverse @OUT) {
+	    if (@$_) {
+		print "\n";
+		print reverse @$_;
+	    }
+	}
+	print '-' x 80, "\n";
+    }
+}
+else {
+    @OUT = ();
+    look(@ARGV);
+    for (reverse @OUT) {
+	if (@$_) {
+	    print "\n";
+	    print reverse @$_;
+	}
+    }
+}
+
+sub look {
+    my @args = @_;
+    my $line;
+    my $cjkrads;
+    $likely = $likeliness;
+    if ($expand and $args[0] =~ /^\+/) {
+	if (!%plusline) {
+	    open(ALL, "cjkrads/ALL");
+	    eval { binmode ALL, ":utf8" };
+	    while (<ALL>) {
+		while (m/\+([a-zA-Z][-\w]*)/g) {
+		    $plusline{$1} = $_;
+		}
+	    }
+	}
+	$line = $plusline{substr($args[0],1)};
+    }
+    for (;;) {
+	my $vec = "\xff" x 24576;  # up through plane 2
+	if (!$line and !$cjkrads) {
+	    my @newargs;
+	    while ($arg = shift @args) {
+		$file = $arg;
+		$file =~ s/^\+//;
+		$file =~ s/^\d+[*.]//;
+		$file =~ s/!+$//;
+		$file =~ s/\.\w+$//;
+		$file =~ s/\~\w*$//;
+		next if $file eq "";
+		if ($alias{$file} ne $file and -f "cjkrads/vec/$alias{$file}") {
+		    warn "*** Mapping $file -> $alias{$file}\n";
+		    $file = $alias{$file};
+		}
+		if (not -f "cjkrads/vec/$file") {
+		    my @n = split(/-/,$file);
+		    if (@n < 2) {
+			push @newargs, $arg;
+			next;
+		    }
+		    $arg = shift @n;
+		    unshift(@args,@n);
+		}
+		push @newargs, $arg;
+		warn "Selecting $file\n" if $debug;
+		open(BITS, "cjkrads/vec/$file");
+		sysread(BITS, $bits, -s "cjkrads/vec/$file");
+		close BITS;
+		$vec &= $bits;
+	    }
+	    @args = @newargs;
+	    my $filename = "./ALL";
+
+	    open $cjkrads, "cjkrads/$filename" or die "Can't open cjkrads/$filename: $!";
+	    eval { binmode $cjkrads, ":utf8" };
+	}
+
+	my @pats;
+	my @negs;
+	for (@args) {
+	    my $pat = $_;
+	    if ($pat =~ s/^-//) {
+		my $tmp = transmogrify($pat);
+		push @pats, qr/$tmp/;
+		push @negs, 1;
+	    }
+	    else {
+		my $tmp = transmogrify($pat);
+		push @pats, qr/$tmp/;
+		push @negs, 0;
+	    }
+	}
+#	if (not $co) {
+#	    unshift(@pats,qr/(?=^....\t)/);
+#	    unshift(@negs, 0);
+#	}
+	warn "PAT @pats\n" if $debug;
+	warn "NEG @negs\n" if $debug;
+	LINE:
+	while ($line or $cjkrads) {
+	    if ($line) {
+		$_ = $line;
+		$line = "";
+	    }
+	    else {
+		$_ = <$cjkrads> or last;
+		my $linenum = $.;
+		next LINE unless vec($vec,$linenum,1);
+#		print "LINENUM = $linenum\n";
+#		print "LINE = $_\n";
+		foreach my $n (0..$#pats) {
+		    my $matches = /$pats[$n]/;
+		    $matches = !$matches if $negs[$n];
+		    next LINE unless $matches;
+		}
+	    }
+	    $got++;
+	    s/ \[ [^][]* \]// unless $verbose;
+	    if (defined $expand and $expand > 0) {
+		s/^(.*\t)/$1 . "    " x $expand . substr($args[0],1) . ':  '/e;
+	    }
+	    my ($strokes) = /\s(\d\d)\s/;
+	    push(@{$OUT[$strokes]}, $_);
+	    if (defined $expand) {
+		local $expand = $expand + 1;
+		my @words = split " ", $_;
+		shift @words;
+		shift @words;
+		my %myxseen;
+		my $tmpdeb = 1 if /\+tree /;
+		for (@words) {
+		    last if /^\[/;
+		    next if /^\+/;
+		    s/^\d+[*.]//;
+		    s/\.[a-zA-Z]+$//;
+		    next if s/\~\w*$// and not $eXpand;
+		    next if m#^/#;
+		    next if $_ eq "radical";
+		    next if $_ eq "sym";
+		    next if $_ eq "vbar";
+		    next if $_ eq "hbar";
+		    next if ord($_) > 255;
+		    next if /=/;
+		    next if $xseen{$_}++;
+		    next if $myxseen{$_}++;
+		    next unless /^[a-zA-Z][-a-zA-Z0-9]*$/;
+		    my $word = $_;
+		    look("+$word");
+		    #$xseen{$word} = 0;
+		}
+	    }
+	}
+	last if $got;
+	if (!$likely) {
+	    warn "*** Trying for lookalikes of @args\n";
+	    $likely++;
+	    $keeptrying //= 1;
+	    seek($cjkrads, 0, 0);
+	    $. = 0;
+	    next;
+	}
+	elsif (@args > 1 and $keeptrying) {
+	    warn "*** Ignoring ", pop(@args), "\n" ;
+	    $likely = 0;
+	    close $cjkrads;
+	    undef $cjkrads;
+	    next;
+	}
+	else {
+	    die "Nothing matches ", pop(@args), "\n" ;
+	}
+    }
+    close $cjkrads;
+}
+
+sub transmogrify {
+    my $arg = $_[0];
+    Encode::_utf8_on($arg);
+    #print $arg,"\n";
+
+    my $officially = "";
+    if ($arg =~ s/!$//) {
+	$officially = '\t[+]?(?:\d[*.])?'
+    }
+
+    my $def = "";
+    if ($arg =~ s/^\+//) {
+	$def = '[+]';
+    }
+
+    my $like = "";
+    if ($likely) {
+	$like = '(?:\~\w*)?';
+    }
+
+    if ($alias{$arg}) {
+	$word = $alias{$arg};
+	$arg = "$def$officially\\b$word$like\\b(?![-~])";
+    }
+    elsif ($arg =~ /^[-~+A-Za-z0-9_.*?]*$/) {
+	$arg =~ s/\?/\\S/g;
+	if ($likely) {
+	    $arg =~ s/(.*)\.(.*)/$1${like}[.]\\S*$2/ or $arg .= $like;
+	    # warn "$arg\n";
+	}
+	$arg =~ s/^/\\b(?![-~])/ unless $arg =~ s/^\*//;
+	$arg =~ s/$/\\b(?![-~])/ unless $arg =~ s/\*$//;
+	$arg =~ s/\*/\\*/g;
+	$arg =~ s/\./\\./g;
+#	$arg =~ s/\*/[-~+A-Za-z0-9_.]*/g;
+	$arg = "$def$officially$arg";
+    }
+    elsif ($arg =~ s#^/(.*)/?$#$1#) {
+	$arg = "$def$officially$arg";
+    }
+    elsif (ord $arg > 255) {
+	$arg = "$def$arg\t";
+    }
+    else {
+	die "Don't understand $arg\n";
+    }
+    return $arg;
+}

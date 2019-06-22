@@ -1,0 +1,7 @@
+#!/usr/bin/perl
+
+binmode STDOUT, ":utf8";
+for (hex(@ARGV[0]) .. hex(@ARGV[1])) {
+    printf "%04x 99\t%s\t\n", $_, chr($_);
+}
+
