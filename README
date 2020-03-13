@@ -115,8 +115,10 @@
 	m  middle	c  center
 	b  bottom	r  right
 
-	o  outside
+	o  outside (n nw w se s variants)
 	i  inside
+
+	x  overlapped
 
     Spreaders:
 	C  anti-c, that is, split l+r (or wider than the c thing)

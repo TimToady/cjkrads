@@ -8,7 +8,7 @@ while (<>) {
     for my $part (@parts) {
 	my $rep = 1;
 	$rep = $1 if $part =~ s/^(\d+)\*//;
-	next unless $part =~ /^([-\w]+)\.[lrtbmcMCioQTRFVH]+$/;
+	next unless $part =~ /^([-\w]+)\.[lrtbmcMCionsewxQTRFVH]+$/;
 	my $word = $1;
 	next if $word =~ /~\w*$/;
 	my $lookup = `egrep '[+]$word\\>(\$|[^-])' rads || rad '+$word'`;

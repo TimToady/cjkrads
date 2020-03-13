@@ -296,6 +296,7 @@ sub transmogrify {
 	    $arg =~ s/(.*)\.(.*)/$1${like}[.]\\S*$2/ or $arg .= $like;
 	    # warn "$arg\n";
 	}
+	$arg .= "*" if $arg =~ /\..*o$/;
 	$arg =~ s/^/\\b(?![-~])/ unless $arg =~ s/^\*//;
 	$arg =~ s/$/\\b(?![-~])/ unless $arg =~ s/\*$//;
 	$arg =~ s/\*/\\*/g;
