@@ -225,7 +225,7 @@ sub look {
 		    last if /^\[/;
 		    next if /^\+/;
 		    s/^\d+[*.]//;
-		    s/\.[a-zA-Z]+$//;
+		    s/\.[a-zA-Z0-9]+$//;
 		    next if s/\~\w*$// and not $eXpand;
 		    next if m#^/#;
 		    next if $_ eq "radical";

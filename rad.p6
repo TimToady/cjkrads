@@ -198,7 +198,7 @@ sub look (*@args is copy){
 		    last if /^\[/;
 		    next if /^\+/;
 		    s/^\d+\*//;
-		    s/\.<[a..z A..Z]>+$//;
+		    s/\.<[a..z A..Z 0..9]>+$//;
 		    next if s/'~like'$// and not $eXpand;
 		    next if m/^'/'/;
 		    next if $_ eq "radical";

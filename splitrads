@@ -86,7 +86,7 @@ while (<RADS>) {
         next if ord($_) > 255;
         delete $adds{$_};
         my $loc = "";
-        s/\.([lrtbmMcCionsewxTQVHRF]+)$// and $loc = $1;
+        s/\.([lrtbmMcCio0-9xTQVHRF]+)$// and $loc = $1;
         my $n = 0;
         $n = $1 if s/^(\d+)[*.]//;
         if ($keyword{$_}) {
@@ -117,7 +117,7 @@ while (<RADS>) {
     my %seen = ();
     foreach (@chunks) {
         next if /=/;
-        s/\.[0-9lrtbmMcCionsewxTQVHRF]+$//;
+        s/\.[lrtbmMcCio0-9xTQVHRF]+$//;
         s/^\d+[*.]//; 
         next if ord($_) > 255;
         s/(.)~\w*$/$1/;

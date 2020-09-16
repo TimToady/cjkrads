@@ -111,23 +111,41 @@
     a dot to indicate their position.
 
     Basic positions:
-	t  top		l  left
-	m  middle	c  center
-	b  bottom	r  right
 
-	o  outside (n nw w se s variants)
-	i  inside
+           ⿰/⿲           ⿱/⿳
+        l  left         t  top
+        c  center       m  middle
+        r  right        b  bottom
 
-	x  overlapped
+           ⿴/⿵/⿶/⿷/⿸/⿹/⿺
+        o  outside (can have multiple insertions, 𠼡=bow.o126)
+        i  inside (only one direction, usually, 𠼡=sigh.i1,work.i2,work.i6)
+
+           Direction of insertion is 0..7 for 45° rotations clockwise:
+            0  ⿵ n     太=big.o0  處=Tiger.o0
+            1  ⿹ ne    㢧=bow.o1
+            2     e     𢎛=bow.o2
+            3     se    头=big.o3
+            4  ⿶ s     凷=bin.o4
+            5  ⿺ sw    㲌=fur.o5  彪=Tiger.o5
+            6  ⿷ w     匛=box.o6  𧆬=Tiger.o6
+            7  ⿸ nw    在=dam.o7  𧆸=Tiger.o7
+
+            8  ⿴ completely surrounds inner glyph (8 sides)  㘞=closure.o8
+            9  ⿴ has internal extension ticks, lines, marks  丼=well.o9
+
+           ⿻
+        x  overlapped/shared without obvious containment 甴=mouth.x,tack.x
+           (note that c/C and m/M below already imply some overlap)
 
     Spreaders:
-	C  anti-c, that is, split l+r (or wider than the c thing)
-	M  anti-m, that is, split t+b (or taller than the m thing)
-	V  Vertical, 3 or more in a stack, usually nothing inside
-	H  Horizontal, 3 or more in a row, usually nothing inside
+        C  anti-c, that is, split l+r (or wider than the c thing)  粥=2bow.C
+        M  anti-m, that is, split t+b (or taller than the m thing) 呂=2mouth.M
+        V  Vertical, 3 or more in a stack, usually nothing inside  ☰ =3h.V
+        H  Horizontal, 3 or more in a row, usually nothing inside  Ⅲ =3v.H
 
-	T  triple, e.g. 众 is 1*guy.tc 2*guy.bC
-	Q  quad, e.g. 𠈌 is 4*guy.CM or 4*guy.MC in a square
+        T  triple   众 is 1*guy.tc 2*guy.bC
+        Q  quad     𠈌 is 4*guy.CM or 4*guy.MC in a square
 
     Generally, if it's ambiguous whether to describe crossings vertically
     or horizontally, I've chosen to use c/C to describe things in the
@@ -135,15 +153,15 @@
     sometimes I do both...
 
     Approximators:
-	~R    Rotation (replication implies rotational symmetry, e.g. 𦮙.b)
-	        May be annotated with 45° rotations 0..7 clockwise
-	~F    Flipped (replication implies mirror symmetry)
-	        May be annotated with location/axis of flip
-	~S    Stolen from or shared with another piece
-	        May be annotated with location of piece shared
-	~oid  A descriptive subshape that isn't really a subradical
-	        (a 止 contains 上 but they are really different shapes)
-	~like A miscellaneous could-be-confused-with lookalike
+        ~R    Rotation (replication implies rotational symmetry, e.g. 𦮙.b)
+                May be annotated with 45° rotations 0..7 clockwise
+        ~F    Flipped (replication implies mirror symmetry)
+                May be annotated with location/axis of flip
+        ~S    Stolen from or shared with another piece
+                May be annotated with location of piece shared
+        ~oid  A descriptive subshape that isn't really a subradical
+                (a 止 contains 上 but they are really different shapes)
+        ~like A miscellaneous could-be-confused-with lookalike
 
     An isolated single slash (/) gives a vague idea of alternation.
     Note that the first alternative is usually going to be the "correct"

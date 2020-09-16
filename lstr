@@ -6,7 +6,7 @@ while (<>) {
     push @lines, $_;
     if (my ($front, $X,$x,$Y,$y,$Z,$z, $back) = /^(.*?\t)([-\w]+)\.(\w) ([-\w]+)\.(\w+) ([-\w]+)\.(\w+)\b(.*)$/) {
 	my $form = "$x $y $z";
-	$form =~ tr/nsew//d;
+	$form =~ tr/0123456789//d;
 	if ($form eq "l rt rb") {
 	    push @lines, $front . "$Y.i $X.ol $Z.or" . "$back\n";
 	    push @lines, $front . "$Z.i $X.ol $Y.or" . "$back\n";
@@ -71,11 +71,11 @@ for (@lines) {
     my $front = $1;
     my $rest = $_;
 
-    if (s/^([-\w]+)\.([lrtbmcMCiolnsew])\s+//) {
+    if (s/^([-\w]+)\.([lrtbmcMCiol0-9])\s+//) {
 	my $root = $1;
 	my $ext = $2;
 	my @anti;
-	$ext =~ tr/nsew//d;
+	$ext =~ tr/0-9//d;
 	(my $opp = $ext) =~ tr/lrtbmcMCio/rlbtMCmcoi/;
 	# say "$ext $opp";
 	if ($ext eq 'l') {
@@ -101,7 +101,7 @@ for (@lines) {
 	$opp = '[lr]' if $opp eq 'C';
 	for (split(' ', $_)) {
 	    # say $_;
-	    if (!/~/ and s/\.$opp(\w)[nsew]*/.$1/g) {
+	    if (!/~/ and s/\.$opp(\w)[0-9]*/.$1/g) {
 		push @anti, $_;
 	    }
 	    else {
@@ -141,7 +141,7 @@ for (@lines) {
     for my $part (@parts) {
 	my $rep = 1;
 	$rep = $1 if $part =~ s/^(\d+)\.//;
-	next unless $part =~ /^([-~\w]+)\.[lrtbmcMCionsewxTQRF]+$/;
+	next unless $part =~ /^([-~\w]+)\.[lrtbmcMCio0-9xTQRF]+$/;
 	my $word = $1;
 	next if $word =~ /[~]\w*$/;
 	my $lookup = `egrep '[+]$word\\>(\$|[^-])' rads || rad '+$word'`;
