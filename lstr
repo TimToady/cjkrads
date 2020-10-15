@@ -4,7 +4,7 @@ use 5.010;
 
 while (<>) {
     push @lines, $_;
-    if (my ($front, $X,$x,$Y,$y,$Z,$z, $back) = /^(.*?\t)([-\w]+)\.(\w) ([-\w]+)\.(\w+) ([-\w]+)\.(\w+)\b(.*)$/) {
+    if (my ($front, $X,$x,$Y,$y,$Z,$z, $back) = /^(.*?\t)([-\w]+)\.(\w\d?) ([-\w]+)\.(\w+) ([-\w]+)\.(\w+)\b(.*)$/) {
 	my $form = "$x $y $z";
 	$form =~ tr/0123456789//d;
 	if ($form eq "l rt rb") {
@@ -101,7 +101,7 @@ for (@lines) {
 	$opp = '[lr]' if $opp eq 'C';
 	for (split(' ', $_)) {
 	    # say $_;
-	    if (!/~/ and s/\.$opp(\w)[0-9]*/.$1/g) {
+	    if (!/~/ and s/\.$opp[0-9]*(\w)/.$1/g) {
 		push @anti, $_;
 	    }
 	    else {
@@ -111,7 +111,7 @@ for (@lines) {
 	if (@anti) {
 	    my $doit = 1;
 	    my $grep = join ' | ', map { "grep -i '\\<$_'" } @anti;
-	    # say "# root $root ext $ext opp $opp rad @anti | $grep";
+	    say "# root $root ext $ext opp $opp rad @anti | $grep";
 	    my @lookup = `rad -v @anti | $grep`;
 	    $doit = 0 unless @lookup;
 	    @lookup = `rad -l -v -K @anti | $grep` unless @lookup;
