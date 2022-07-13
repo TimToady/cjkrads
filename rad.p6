@@ -2,6 +2,8 @@
 
 use MONKEY-SEE-NO-EVAL;
 
+constant PLANES = 4;
+
 my $CJK = %*ENV<HOME> ~ '/cjk';
 #chdir $CJK or die "Can't cd to $CJK: $!\n";
 
@@ -98,7 +100,7 @@ sub look (*@args is copy){
 	$line = %plusline{substr(@args[0],1)};
     }
     loop {
-	my $vec = Buf.new(0xff xx 24575);  # up through plane 2
+	my $vec = Buf.new(0xff xx 0x10000 * PLANES / 8);
 	if !$line and !$cjkrads {
 	    my @newargs;
 	    note "args @args[]" if $debug;
@@ -265,6 +267,7 @@ sub transmogrify($_ is copy) {
 	if $*likely {
 	    s/(.*)\.(.*)/$0 $like .* $1*/ or $_ ~= $like;
 	}
+	$_ ~= '\\d?' if /\. .* <[io]>$/;
 	s:g/\./\\./;
 	s:g/\~/\\~/;
 	s:g/\-/\\-/;
