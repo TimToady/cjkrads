@@ -4,6 +4,8 @@ use 5.010;
 
 while (<>) {
     my $strokes = 0;
+    my $rest = '';
+    s/( \/ .*)// and $rest = $1;
     my @parts = split(' ');
     for my $part (@parts) {
 	my $rep = 1;
@@ -21,5 +23,6 @@ while (<>) {
     $strokes += 100;
     $strokes = substr($strokes,-2,2);
     s/(\s)\d\d(\s)/$1$strokes$2/;
+    s/\n/$rest\n/;
     print;
 }
