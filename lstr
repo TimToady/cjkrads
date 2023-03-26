@@ -65,6 +65,7 @@ while (<>) {
 
 my $prevstrokes = '';
 
+print $lines[0];
 for (@lines) {
     if (not s/^(.*\t)//) {
 	print;

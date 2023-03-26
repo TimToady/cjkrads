@@ -208,6 +208,8 @@ sub look {
 		    $matches = !$matches if $negs[$n];
 		    next LINE unless $matches;
 		}
+		# ignore non-defining compatibily glyphs
+		next LINE if /^2?f[^+]*$/ and not $keeptrying;
 	    }
 	    $got++;
 	    s/ \[ [^][]* \]// unless $verbose;
