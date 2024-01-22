@@ -26,3 +26,4 @@ map gn gydd
 map gg E.kJ
 map gj 03dWi / kJ
 map g/ lBi/ 
+map gx 'x/	$
